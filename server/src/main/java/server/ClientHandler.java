@@ -22,8 +22,9 @@ public class ClientHandler {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
-            new Thread(() -> {
-                try {
+            server.executorService.execute(()-> {
+                System.out.println("start");
+               try {
                     //Если в течении 5 секунд не будет сообщений по сокету то вызовится исключение
                     socket.setSoTimeout(120000);
 
@@ -143,9 +144,7 @@ public class ClientHandler {
                         e.printStackTrace();
                     }
                 }
-            }).start();
-
-
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
