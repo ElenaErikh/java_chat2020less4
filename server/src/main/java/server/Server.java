@@ -8,11 +8,14 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.*;
 
 
 public class Server {
     private List<ClientHandler> clients;
     private AuthService authService;
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
+    Handler consoleHandler;
 
     ExecutorService executorService;
 
@@ -20,8 +23,16 @@ public class Server {
         clients = new Vector<>();
         executorService = Executors.newCachedThreadPool();
 
+        logger.setUseParentHandlers(false);
+        consoleHandler = new ConsoleHandler();
+        consoleHandler.setFormatter(new SimpleFormatter());
+        consoleHandler.setLevel(Level.INFO);
+        logger.addHandler(consoleHandler);
+
+
         //==============//
         if (!SQLHandler.connect()) {
+            logger.log(Level.INFO, "Не удалось подключиться к БД");
             throw new RuntimeException("Не удалось подключиться к БД");
         }
         authService = new DBAuthServise();
@@ -34,11 +45,13 @@ public class Server {
 
         try {
             server = new ServerSocket(PORT);
-            System.out.println("Сервер запущен!");
+            //System.out.println("Сервер запущен!");
+            logger.log(Level.INFO, "Сервер запущен!");
 
             while (true) {
                 socket = server.accept();
-                System.out.println("Клиент подключился ");
+                //System.out.println("Клиент подключился ");
+                logger.log(Level.INFO, "Клиент подключился");
                 new ClientHandler(this, socket);
             }
 
