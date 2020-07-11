@@ -5,12 +5,15 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.logging.*;
 
 public class ClientHandler {
     private Server server;
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+    private static final Logger logger = Logger.getLogger(ClientHandler.class.getName());
+    Handler consoleHandler;
 
     private String nick;
     private String login;
@@ -22,9 +25,16 @@ public class ClientHandler {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
+            logger.setUseParentHandlers(false);
+            consoleHandler = new ConsoleHandler();
+            consoleHandler.setFormatter(new SimpleFormatter());
+            consoleHandler.setLevel(Level.INFO);
+            logger.addHandler(consoleHandler);
+
             server.executorService.execute(()-> {
-                System.out.println("start");
-               try {
+                //System.out.println("start");
+                logger.log(Level.INFO, "start");
+                try {
                     //Если в течении 5 секунд не будет сообщений по сокету то вызовится исключение
                     socket.setSoTimeout(120000);
 
@@ -44,8 +54,11 @@ public class ClientHandler {
                                     .registration(token[1], token[2], token[3]);
                             if (succeed) {
                                 sendMsg("Регистрация прошла успешно");
+                                logger.log(Level.INFO, "Регистрация прошла успешно");
                             } else {
                                 sendMsg("Регистрация  не удалась. \n" +
+                                        "Возможно логин уже занят, или данные содержат пробел");
+                                logger.log(Level.INFO, "Регистрация  не удалась.\n " +
                                         "Возможно логин уже занят, или данные содержат пробел");
                             }
                         }
@@ -65,9 +78,11 @@ public class ClientHandler {
                             if (newNick != null) {
                                 if (!server.isLoginAuthorized(login)) {
                                     sendMsg("/authok " + newNick);
+                                    logger.log(Level.INFO, "/authok " + newNick);
                                     nick = newNick;
                                     server.subscribe(this);
                                     System.out.println("Клиент: " + nick + " подключился" + socket.getRemoteSocketAddress());
+                                    logger.log(Level.INFO, "Клиент: " + nick + " подключился"+ socket.getRemoteSocketAddress());
                                     socket.setSoTimeout(0);
 
                                     //==============//
@@ -137,7 +152,8 @@ public class ClientHandler {
                     e.printStackTrace();
                 } finally {
                     server.unsubscribe(this);
-                    System.out.println("Клиент отключился");
+                    //System.out.println("Клиент отключился");
+                    logger.log(Level.INFO, "Клиент отключился");
                     try {
                         socket.close();
                     } catch (IOException e) {
